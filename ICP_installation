@@ -94,4 +94,12 @@
             backup=yes
 
 
+# Execute the codes together
 
+---
+ - import_playbook: partdiskk.yml   # copy part_disk.sh and wdp.conf on remote machine
+ - import_playbook: runpd3.yml     # ask the location to mount and replace the node_docker_disk=/dev/vdd in wdp.conf file
+ - import_playbook: playbook2.yml  # install haproxy
+ - import_playbook: rep2.yml       # change ip address in haproxy.cfg on localhost and wdp.conf on remote machine
+ - import_playbook: replace.yml    # replace haproxy.cfg on remote machine
+ - import_playbook: enahaproxy1.yml # enable and restart haproxy
