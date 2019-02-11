@@ -1,0 +1,97 @@
+# Copy part_disk.sh and wdp.conf file on load balancer
+---
+ - hosts: lb
+
+   tasks:
+     - name: copy part_disk file
+       copy:
+        src: /etc/ansible/templates/part_disk.sh
+        dest: /etc/part_disk.sh  # can be update
+
+     - name: copy  wdp  config
+       template: src=/etc/ansible/templates/wdp.conf
+            dest=/IBM  # can be update
+          #   backup=yes
+          
+#  Ask for the location to mount 
+---
+ - hosts: lb
+   vars_prompt:
+     - name: location
+       prompt: "Location to mount?  Input example: /dev/xvdc where the parameter is the name that you gave to the mounted directory.To see the device file name for all disks that are installed on the server, use the commands parted -l or lsblk"
+       private: no
+   tasks:
+     - set_fact: "{{location}}"
+  # tasks:
+  #   - command: ./part_disk.sh "{{location}}" /IBM
+  #     args:
+  #      chdir: /etc
+  #   - debug:
+  #      msg: "Hello"
+
+     - name: replace mount location in wdp.conf file
+       replace:
+         path: /IBM/wdp.conf
+         regexp: '/dev/vdd'
+         replace: "{{location}}"
+
+# Install haproxy
+
+---
+ - hosts: lb
+
+   tasks:
+     - name: install haproxy
+       yum:
+          name: haproxy
+          state: present
+# Change in haproxy.cfg file on localhost and wdp.conf file on remote host
+---
+ - hosts: 127.0.0.1
+   tasks:
+      - name: replace master1_private_ip
+        replace:
+          path: "{{ item.path }}"
+          regexp: "{{ item.regexp1 }}"
+          replace: "{{ item.replace }}"
+        with_items:
+         - { path: '/etc/ansible/templates/haproxy.cfg', regexp1: 'master-1-private-ip', replace: '102.33'}
+         - { path: '/etc/ansible/templates/haproxy.cfg', regexp1: 'master-2-private-ip', replace: '102.34'}
+         - { path: '/etc/ansible/templates/haproxy.cfg', regexp1: 'master-3-private-ip', replace: '102.35'}
+
+
+ - hosts: lb
+   tasks:
+      - name: replace ip_address_in_wdp.conf
+        replace:
+          path: "{{ item.path }}"
+          regexp: "{{ item.regexp1 }}"
+          replace: "{{ item.replace }}"
+        with_items:
+         - { path: '/IBM/wdp.conf', regexp1: 'node-1-ip-address', replace: '102.33'}
+         - { path: '/IBM/wdp.conf', regexp1: 'node-2-ip-address', replace: '102.34'}
+         - { path: '/IBM/wdp.conf', regexp1: 'node-3-ip-address', replace: '102.35'}
+         
+     # Replace the haproxy.cfg file on remote host
+     ---
+ - hosts: lb
+
+   tasks:
+     - name: update haproxy config
+       template: src=/etc/ansible/templates/haproxy.cfg
+            dest=/etc/haproxy/haproxy.cfg
+            backup=yes
+            
+       # Enable  and restart haproxy
+       
+       ---
+ - hosts: lb
+
+   tasks:
+     - name: update haproxy config
+       template: src=/etc/ansible/templates/haproxy.cfg
+            dest=/etc/haproxy/haproxy.cfg
+            backup=yes
+
+
+
