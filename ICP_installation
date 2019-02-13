@@ -84,15 +84,15 @@
             
        # Enable  and restart haproxy
        
-       ---
+      ---
+#- name: This is a playbook to enable and restart haproxy
  - hosts: lb
-
    tasks:
-     - name: update haproxy config
-       template: src=/etc/ansible/templates/haproxy.cfg
-            dest=/etc/haproxy/haproxy.cfg
-            backup=yes
-
+   - command: systemctl restart haproxy
+     register: repo_out
+   - command: systemctl enable haproxy
+   - debug:
+      msg: "Hello World"
 
 # Execute the codes together
 
